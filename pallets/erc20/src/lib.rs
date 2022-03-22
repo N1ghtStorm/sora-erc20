@@ -7,10 +7,18 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
-// use sp_std::{prelude::*};
 pub use pallet::*;
-// use frame_support::{decl_module, decl_storage, decl_event, decl_error, dispatch, traits::Get};
 use frame_system::ensure_signed;
+use frame_support::{
+    codec::{Decode, Encode},
+    sp_runtime::RuntimeDebug,
+};
+
+#[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq)]
+pub struct Allowance<A, B> {
+	pub account: A,
+	pub balance: B, 
+}
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -21,6 +29,7 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 	use frame_support::dispatch::Vec;
 	use super::*;
+	use frame_support::sp_runtime::traits::{CheckedAdd, CheckedSub};
 
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
@@ -67,26 +76,28 @@ pub mod pallet {
 		ValueQuery
 	>;
 
-	// #[pallet::storage]
-	// #[pallet::getter(fn get_allowance)]
-	// pub(super) type AllowanceOf<T> = StorageMap<
-	// 	_,
-	// 	Blake2_128Concat,
-	// 	T::AccountId,
-	// 	T::Balance,
-	// 	ValueQuery
-	// >;
+	#[pallet::storage]
+	#[pallet::getter(fn get_allowance)]
+	pub(super) type AllowanceOf<T: Config> = StorageDoubleMap<
+		_,
+		Blake2_128Concat,
+		T::AccountId,
+		Blake2_128Concat,
+		T::AccountId,
+		T::Balance,
+		ValueQuery
+	>;
 
 	#[pallet::error]
 	pub enum Error<T> {
-
+		TransferAmountExceedsBalance,
     }
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	#[pallet::metadata(T::AccountId = "AccountId", T::Balance = "Balance")]
 	pub enum Event<T: Config> {
-
+		Transfer(T::AccountId, T::AccountId, T::Balance),
     }
 	
 	#[deprecated(note = "use `Event` instead")]
@@ -97,7 +108,8 @@ pub mod pallet {
 	impl<T: Config> Pallet<T> {
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1, 1))]
         pub fn transfer(origin: OriginFor<T>, to: T::AccountId, amount: T::Balance) -> DispatchResultWithPostInfo {
-			todo!();
+			let from = ensure_signed!(origin);
+			Self::transfer_impl(from, to, amount);
             Ok(().into())
         }
 
@@ -117,5 +129,25 @@ pub mod pallet {
 			todo!();
             Ok(().into())
         }
+    }
+
+	impl<T: Config> Pallet<T> {
+		pub fn transfer_impl(from: T::AccountId, to: T::AccountId, amount: T::Balance) -> DispatchResultWithPostInfo {			
+			BalanceOf::<T>::try_mutate(&from, |from_bal| -> DispatchResultWithPostInfo {
+				ensure!(*from_bal >= amount, Error::<T>::TransferAmountExceedsBalance);
+				BalanceOf::<T>::try_mutate(&to, |to_bal| -> DispatchResultWithPostInfo {
+					from_bal.checked_sub(&amount);
+					to_bal.checked_add(&amount);
+					Ok(().into())
+				})?;
+				Ok(().into())
+			})?;
+			Self::deposit_event(Event::Transfer(from, to, amount));
+			Ok(().into())
+		}
+
+		// pub fn approve_impl(owner: T::AccountId, sender: T::AccountId, amount){
+
+		// }
     }
 }

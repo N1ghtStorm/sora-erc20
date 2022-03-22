@@ -256,6 +256,11 @@ impl pallet_sudo::Config for Runtime {
 	type Call = Call;
 }
 
+pub use pallet_erc20;
+
+impl pallet_erc20::Config for Runtime {
+	type Event = Event;
+}
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
@@ -272,6 +277,7 @@ construct_runtime!(
 		Balances: pallet_balances::{Module, Call, Storage, Config<T>, Event<T>},
 		TransactionPayment: pallet_transaction_payment::{Module, Storage},
 		Sudo: pallet_sudo::{Module, Call, Config<T>, Storage, Event<T>},
+		PalletERC20: pallet_erc20::{Module, Call, Event<T>, Storage},
 		// Include the custom logic from the template pallet in the runtime.
 	}
 );
