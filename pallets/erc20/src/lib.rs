@@ -91,6 +91,8 @@ pub mod pallet {
 	#[pallet::error]
 	pub enum Error<T> {
 		TransferAmountExceedsBalance,
+		DecreasedAllowanceBelowZero,
+		BalanceOverflow
     }
 
 	#[pallet::event]
@@ -108,8 +110,8 @@ pub mod pallet {
 	impl<T: Config> Pallet<T> {
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1, 1))]
         pub fn transfer(origin: OriginFor<T>, to: T::AccountId, amount: T::Balance) -> DispatchResultWithPostInfo {
-			let from = ensure_signed!(origin);
-			Self::transfer_impl(from, to, amount);
+			let from = ensure_signed(origin)?;
+			Self::transfer_impl(from, to, amount)?;
             Ok(().into())
         }
 
@@ -129,6 +131,28 @@ pub mod pallet {
 			todo!();
             Ok(().into())
         }
+
+		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1, 1))]
+        pub fn increase_allowance(origin: OriginFor<T>, sender: T::AccountId, added_value: T::Balance) -> DispatchResultWithPostInfo {
+			let owner = ensure_signed(origin)?;
+			let amount = AllowanceOf::<T>::get(&owner, &sender)
+													.checked_add(&added_value)
+													.ok_or(Error::<T>::BalanceOverflow)?;
+
+			Self::approve_impl(owner, sender, amount)?;
+            Ok(().into())
+        }
+
+		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1, 1))]
+        pub fn decrease_allowance(origin: OriginFor<T>, sender: T::AccountId, substracted_value: T::Balance) -> DispatchResultWithPostInfo {
+			let owner = ensure_signed(origin)?;
+			let current_allowance = AllowanceOf::<T>::get(&owner, &sender);
+			ensure!(current_allowance >= substracted_value, Error::<T>::DecreasedAllowanceBelowZero);
+			let amount = current_allowance.checked_sub(&substracted_value)
+																.ok_or(Error::<T>::BalanceOverflow)?;
+			Self::approve_impl(owner, sender, amount)?;
+            Ok(().into())
+        }
     }
 
 	impl<T: Config> Pallet<T> {
@@ -146,8 +170,12 @@ pub mod pallet {
 			Ok(().into())
 		}
 
-		// pub fn approve_impl(owner: T::AccountId, sender: T::AccountId, amount){
-
-		// }
+		pub fn approve_impl(owner: T::AccountId, sender: T::AccountId, amount: T::Balance) -> DispatchResultWithPostInfo {
+			AllowanceOf::<T>::try_mutate(owner, sender, |bal| -> DispatchResultWithPostInfo {
+				*bal = amount;
+				Ok(().into())
+			})?;
+			Ok(().into())
+		}
     }
 }
