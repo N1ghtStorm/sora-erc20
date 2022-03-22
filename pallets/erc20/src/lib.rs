@@ -29,7 +29,7 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 	use frame_support::dispatch::Vec;
 	use super::*;
-	use frame_support::sp_runtime::traits::{CheckedAdd, CheckedSub};
+	use frame_support::sp_runtime::traits::{CheckedAdd, CheckedSub, Bounded};
 
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
@@ -92,7 +92,8 @@ pub mod pallet {
 	pub enum Error<T> {
 		TransferAmountExceedsBalance,
 		DecreasedAllowanceBelowZero,
-		BalanceOverflow
+		BalanceOverflow,
+		InsufficientAllowance,
     }
 
 	#[pallet::event]
@@ -179,6 +180,16 @@ pub mod pallet {
 				Ok(().into())
 			})?;
 			Self::deposit_event(Event::Approval(owner, spender, amount));
+			Ok(().into())
+		}
+
+		pub fn spend_allowance_impl(owner: T::AccountId, spender: T::AccountId, amount: T::Balance) -> DispatchResultWithPostInfo {
+			let current_allowance = AllowanceOf::<T>::get(&owner, &spender);
+			if current_allowance != T::Balance::max_value() {
+				let new_allowance = current_allowance.checked_sub(&amount)
+									.ok_or( Error::<T>::InsufficientAllowance)?;
+				Self::approve_impl(owner, spender, new_allowance)?;
+			}
 			Ok(().into())
 		}
     }
