@@ -117,8 +117,9 @@ pub mod pallet {
         }
 
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1, 1))]
-        pub fn approve(origin: OriginFor<T>, sender: T::AccountId, amount: T::Balance) -> DispatchResultWithPostInfo {
-			todo!();
+        pub fn approve(origin: OriginFor<T>, spender: T::AccountId, amount: T::Balance) -> DispatchResultWithPostInfo {
+			let owner = ensure_signed(origin)?;
+			Self::approve_impl(owner, spender, amount)?;
             Ok(().into())
         }
 
@@ -151,6 +152,7 @@ pub mod pallet {
 			ensure!(current_allowance >= substracted_value, Error::<T>::DecreasedAllowanceBelowZero);
 			let amount = current_allowance.checked_sub(&substracted_value)
 																.ok_or(Error::<T>::BalanceOverflow)?;
+
 			Self::approve_impl(owner, sender, amount)?;
             Ok(().into())
         }
