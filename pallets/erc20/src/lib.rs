@@ -95,6 +95,27 @@ pub mod pallet {
 	/// Calls:
     #[pallet::call]
 	impl<T: Config> Pallet<T> {
+		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1, 1))]
+        pub fn transfer(origin: OriginFor<T>, to: T::AccountId, amount: T::Balance) -> DispatchResultWithPostInfo {
+			todo!();
+            Ok(().into())
+        }
 
+		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1, 1))]
+        pub fn approve(origin: OriginFor<T>, sender: T::AccountId, amount: T::Balance) -> DispatchResultWithPostInfo {
+			todo!();
+            Ok(().into())
+        }
+
+		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1, 1))]
+        pub fn transfer_from(
+			origin: OriginFor<T>, 
+			from: T::AccountId,
+			to: T::AccountId, 
+			amount: T::Balance
+		) -> DispatchResultWithPostInfo {
+			todo!();
+            Ok(().into())
+        }
     }
 }
