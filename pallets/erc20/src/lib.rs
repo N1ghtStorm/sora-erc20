@@ -100,6 +100,7 @@ pub mod pallet {
 	#[pallet::metadata(T::AccountId = "AccountId", T::Balance = "Balance")]
 	pub enum Event<T: Config> {
 		Transfer(T::AccountId, T::AccountId, T::Balance),
+		Approval(T::AccountId, T::AccountId, T::Balance),
     }
 	
 	#[deprecated(note = "use `Event` instead")]
@@ -170,11 +171,12 @@ pub mod pallet {
 			Ok(().into())
 		}
 
-		pub fn approve_impl(owner: T::AccountId, sender: T::AccountId, amount: T::Balance) -> DispatchResultWithPostInfo {
-			AllowanceOf::<T>::try_mutate(owner, sender, |bal| -> DispatchResultWithPostInfo {
+		pub fn approve_impl(owner: T::AccountId, spender: T::AccountId, amount: T::Balance) -> DispatchResultWithPostInfo {
+			AllowanceOf::<T>::try_mutate(&owner, &spender, |bal| -> DispatchResultWithPostInfo {
 				*bal = amount;
 				Ok(().into())
 			})?;
+			Self::deposit_event(Event::Approval(owner, spender, amount));
 			Ok(().into())
 		}
     }
