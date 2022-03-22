@@ -131,7 +131,9 @@ pub mod pallet {
 			to: T::AccountId, 
 			amount: T::Balance
 		) -> DispatchResultWithPostInfo {
-			todo!();
+			let spender = ensure_signed(origin)?;
+			Self::spend_allowance_impl(from.clone(), spender, amount)?;
+			Self::transfer_impl(from, to, amount)?;
             Ok(().into())
         }
 
