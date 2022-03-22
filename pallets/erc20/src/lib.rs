@@ -19,6 +19,7 @@ pub mod pallet {
 		pallet_prelude::*,
 	};
 	use frame_system::pallet_prelude::*;
+	use frame_support::dispatch::Vec;
 	use super::*;
 
 	#[pallet::pallet]
@@ -40,8 +41,41 @@ pub mod pallet {
 
 	// pallet storages:
 	#[pallet::storage]
-	/// Id of last trade everud request
+	#[pallet::getter(fn get_total_supply)]
+	/// Total supply
 	pub(super) type TotalSupply<T: Config> = StorageValue<_, T::Balance, ValueQuery>;
+
+	#[pallet::storage]
+	#[pallet::getter(fn get_name)]
+	pub type Name<T: Config> = StorageValue<_, Vec<u8>>;
+
+	#[pallet::storage]
+	#[pallet::getter(fn get_symbol)]
+	pub type Symbol<T: Config> = StorageValue<_, Vec<u8>>;
+
+	#[pallet::storage]
+	#[pallet::getter(fn get_decimals)]
+	pub type Decimals<T: Config> = StorageValue<_, u8>;
+
+	#[pallet::storage]
+	#[pallet::getter(fn get_balance)]
+	pub(super) type BalanceOf<T: Config> = StorageMap<
+		_,
+		Blake2_128Concat,
+		T::AccountId,
+		T::Balance,
+		ValueQuery
+	>;
+
+	// #[pallet::storage]
+	// #[pallet::getter(fn get_allowance)]
+	// pub(super) type AllowanceOf<T> = StorageMap<
+	// 	_,
+	// 	Blake2_128Concat,
+	// 	T::AccountId,
+	// 	T::Balance,
+	// 	ValueQuery
+	// >;
 
 	#[pallet::error]
 	pub enum Error<T> {
