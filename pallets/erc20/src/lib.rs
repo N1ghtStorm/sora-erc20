@@ -65,7 +65,7 @@ pub mod pallet {
 		fn build(&self) {
             let total_supply = self.balances
 							.iter()
-							.map(|(x, y)| *y)
+							.map(|(_, y)| *y)
 							.fold(T::Balance::default(),|x, y| {
 								x.checked_add(&y).expect("Genesis build failed: Total supply overflow")
 							});
@@ -77,7 +77,6 @@ pub mod pallet {
 			}
 		}
 	}
-
 
     #[pallet::config]
 	/// The module configuration trait.

@@ -1,23 +1,12 @@
-// use crate::{Error, mock::*};
-// use frame_support::{assert_ok, assert_noop};
+use crate::{Error, mock::*, TotalSupply};
+use frame_support::{assert_ok, assert_noop};
 
-// #[test]
-// fn it_works_for_default_value() {
-// 	new_test_ext().execute_with(|| {
-// 		// Dispatch a signed extrinsic.
-// 		assert_ok!(TemplateModule::do_something(Origin::signed(1), 42));
-// 		// Read pallet storage and assert an expected result.
-// 		assert_eq!(TemplateModule::something(), Some(42));
-// 	});
-// }
-
-// #[test]
-// fn correct_error_for_none_value() {
-// 	new_test_ext().execute_with(|| {
-// 		// Ensure the expected error is thrown when no value is present.
-// 		assert_noop!(
-// 			TemplateModule::cause_error(Origin::signed(1)),
-// 			Error::<Test>::NoneValue
-// 		);
-// 	});
-// }
+#[test]
+fn it_works_for_mock_build_genesis() {
+	new_test_ext_with_event().execute_with(|| {
+        assert_eq!(get_test_total_supply(), PalletErc20::get_total_supply());
+        BALANCES.iter().for_each(|(acc, bal)|{
+            assert_eq!(*bal, PalletErc20::get_balance(acc));
+        })
+	});
+}

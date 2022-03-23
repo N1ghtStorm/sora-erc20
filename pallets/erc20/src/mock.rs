@@ -60,12 +60,15 @@ impl pallet_erc20::Config for Test {
 }
 
 // Build genesis storage according to the mock runtime.
-pub fn new_test_ext() -> sp_io::TestExternalities {
-	system::GenesisConfig::default().build_storage::<Test>().unwrap().into()
+// pub fn new_test_ext() -> sp_io::TestExternalities {
+// 	system::GenesisConfig::default().build_storage::<Test>().unwrap().into()
+// }
+
+pub const BALANCES: [(AccountId, Balance); 4] = [(1, 500_000), (2, 300_00), (3, 1000), (4, 0)];
+
+pub fn get_test_total_supply() -> Balance {
+    BALANCES.iter().map(|(_, y)| y).fold(0, |x, y| x + y)
 }
-
-pub const ACCOUNTS: [AccountId; 6] = [1, 2, 3, 4, 5, 6];
-
 
 // Build genesis storage for event testing
 pub fn new_test_ext_with_event() -> frame_support::sp_io::TestExternalities {
@@ -75,7 +78,7 @@ pub fn new_test_ext_with_event() -> frame_support::sp_io::TestExternalities {
 
     pallet_erc20::GenesisConfig::<Test> {
         // Provide some initial balances
-        balances: ACCOUNTS.iter().map(|x| (*x, 10000000)).collect(),
+        balances: BALANCES.iter().map(|(x, y)| (*x, *y)).collect(),
     }
     .assimilate_storage(&mut t)
     .unwrap();
