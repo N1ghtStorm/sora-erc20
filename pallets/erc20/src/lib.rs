@@ -8,11 +8,18 @@ mod mock;
 mod tests;
 
 pub use pallet::*;
-use frame_system::ensure_signed;
 use frame_support::{
-    codec::{Decode, Encode},
+    codec::{Decode, Encode, Codec},
     sp_runtime::RuntimeDebug,
 };
+// use frame_support::sp_runtime::{
+// 	DispatchResult, DispatchError,
+// 	traits::{
+// 		Zero, AtLeast32BitUnsigned, StaticLookup, CheckedAdd, CheckedSub,
+// 		MaybeSerializeDeserialize, Saturating, Bounded, StoredMapError,
+// 	},
+// };
+use frame_support::sp_runtime::sp_std::{fmt::Debug};
 
 #[derive(Encode, Decode, Clone, Default, RuntimeDebug, PartialEq)]
 pub struct Allowance<A, B> {
@@ -29,7 +36,14 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 	use frame_support::dispatch::Vec;
 	use super::*;
-	use frame_support::sp_runtime::traits::{CheckedAdd, CheckedSub, Bounded};
+	// use frame_support::sp_runtime::traits::{CheckedAdd, CheckedSub, Bounded};
+	use frame_support::sp_runtime::{
+		RuntimeDebug, DispatchResult, DispatchError,
+		traits::{
+			Zero, AtLeast32BitUnsigned, StaticLookup, CheckedAdd, CheckedSub,
+			MaybeSerializeDeserialize, Saturating, Bounded, StoredMapError,
+		},
+	};
 
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
@@ -40,9 +54,10 @@ pub mod pallet {
 	/// The module configuration trait.
 	pub trait Config: 
 		frame_system::Config +
-		pallet_balances::Config +
 	{
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		type Balance: Parameter + Member + AtLeast32BitUnsigned + Codec + Default + Copy +
+					MaybeSerializeDeserialize + Debug;
 	}
 
     #[pallet::hooks]

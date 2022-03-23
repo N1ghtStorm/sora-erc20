@@ -260,6 +260,7 @@ pub use pallet_erc20;
 
 impl pallet_erc20::Config for Runtime {
 	type Event = Event;
+	type Balance = Balance;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
