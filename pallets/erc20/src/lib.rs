@@ -37,22 +37,15 @@ pub mod pallet {
 
 	#[pallet::genesis_config]
 	pub struct GenesisConfig<T: Config> {
-        // pub creator: T::AccountId,
-		a: PhantomData<T>
+		pub balances: Vec<(T::AccountId, T::Balance)>
     }
 
 	#[cfg(feature = "std")]
     impl<T: Config> GenesisConfig<T> {
-        /// Direct implementation of `GenesisBuild::build_storage`.
-        ///
-        /// Kept in order not to break dependency.
         pub fn build_storage(&self) -> Result<sp_runtime::Storage, String> {
             <Self as GenesisBuild<T>>::build_storage(self)
         }
 
-        /// Direct implementation of `GenesisBuild::assimilate_storage`.
-        ///
-        /// Kept in order not to break dependency.
         pub fn assimilate_storage(&self, storage: &mut sp_runtime::Storage) -> Result<(), String> {
             <Self as GenesisBuild<T>>::assimilate_storage(self, storage)
         }
@@ -62,8 +55,7 @@ pub mod pallet {
 	impl<T: Config> Default for GenesisConfig<T> {
 		fn default() -> Self {
 			Self { 
-				// creator: Default::default() 
-				a: Default::default() 
+				balances: Default::default() 
 			}
 		}
 	}
@@ -71,7 +63,18 @@ pub mod pallet {
 	#[pallet::genesis_build]
 	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
 		fn build(&self) {
-            // <CreatorRegistry<T>>::insert(&self.creator, ());
+            let total_supply = self.balances
+							.iter()
+							.map(|(x, y)| *y)
+							.fold(T::Balance::default(),|x, y| {
+								x.checked_add(&y).expect("Genesis build failed: Total supply overflow")
+							});
+
+			TotalSupply::<T>::mutate(|x| *x = total_supply);
+
+			for (acc, bal) in &self.balances {
+				BalanceOf::<T>::insert(acc, bal);
+			}
 		}
 	}
 
@@ -82,10 +85,10 @@ pub mod pallet {
 		frame_system::Config +
 	{
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
-		// type Balance: Parameter + Member + AtLeast32BitUnsigned + Codec + Default + Copy +
-		// 			MaybeSerializeDeserialize + Debug;
+		type Balance: Parameter + Member + AtLeast32BitUnsigned + Codec + Default + Copy +
+					MaybeSerializeDeserialize + Debug;
 		// type Balance: Debug + Default + Copy;
-		type Balance: Parameter + AtLeast32BitUnsigned + Codec + Default + Copy + Debug;
+		// type Balance: Parameter + AtLeast32BitUnsigned + Codec + Default + Copy + Debug;
 	}
 
     #[pallet::hooks]

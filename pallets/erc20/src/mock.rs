@@ -73,12 +73,12 @@ pub fn new_test_ext_with_event() -> frame_support::sp_io::TestExternalities {
         .build_storage::<Test>()
         .unwrap();
 
-    // pallet_erc20::GenesisConfig::<Test> {
-    //     // Provide some initial balances
-    //     balances: ACCOUNTS.iter().map(|x| (x, 10000000)).collect(),
-    // }
-    // .assimilate_storage(&mut t)
-    // .unwrap();
+    pallet_erc20::GenesisConfig::<Test> {
+        // Provide some initial balances
+        balances: ACCOUNTS.iter().map(|x| (*x, 10000000)).collect(),
+    }
+    .assimilate_storage(&mut t)
+    .unwrap();
 
 	let mut ext = sp_io::TestExternalities::new(t);
 	ext.execute_with(|| System::set_block_number(1));
