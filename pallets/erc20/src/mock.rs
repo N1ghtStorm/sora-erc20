@@ -1,3 +1,5 @@
+#![allow(clippy::from_over_into)]
+
 use sp_core::H256;
 use frame_support::parameter_types;
 use sp_runtime::{

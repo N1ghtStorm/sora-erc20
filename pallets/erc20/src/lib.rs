@@ -1,7 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
 
-
 #[cfg(test)]
 mod mock;
 #[cfg(test)]
@@ -25,10 +24,9 @@ pub mod pallet {
 	use frame_support::dispatch::Vec;
 	use super::*;
 	use frame_support::sp_runtime::{
-		RuntimeDebug, DispatchResult, DispatchError,
 		traits::{
-			Zero, AtLeast32BitUnsigned, StaticLookup, CheckedAdd, CheckedSub,
-			MaybeSerializeDeserialize, Saturating, Bounded, StoredMapError,
+			AtLeast32BitUnsigned, CheckedAdd, CheckedSub,
+			MaybeSerializeDeserialize, Bounded,
 		},
 	};
 
@@ -115,18 +113,22 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn get_name)]
+	/// Name byte vector
 	pub type Name<T: Config> = StorageValue<_, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn get_symbol)]
+	/// Symbol byte vector
 	pub type Symbol<T: Config> = StorageValue<_, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn get_decimals)]
+	/// Decimals
 	pub type Decimals<T: Config> = StorageValue<_, u8, ValueQuery, DefaultDecimals>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn get_balance)]
+	/// Balance of an account
 	pub(super) type BalanceOf<T: Config> = StorageMap<
 		_,
 		Blake2_128Concat,
@@ -137,6 +139,7 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn get_allowance)]
+	/// Allowance of an account given to another account
 	pub(super) type AllowanceOf<T: Config> = StorageDoubleMap<
 		_,
 		Blake2_128Concat,
@@ -147,20 +150,29 @@ pub mod pallet {
 		ValueQuery
 	>;
 
+	// Pallet Errors
 	#[pallet::error]
 	pub enum Error<T> {
+		/// Error for if transfer amount exceeds balance
 		TransferAmountExceedsBalance,
+		/// Decreases allowance below zero error
 		DecreasedAllowanceBelowZero,
+		/// Error for balance overflow
 		BalanceOverflow,
+		/// Allowance insufficient error 
 		InsufficientAllowance,
+		/// Burn amount exceeds balacnde error
 		BurnAmountExceedsBalance,
     }
 
+	// Pallet events
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	#[pallet::metadata(T::AccountId = "AccountId", T::Balance = "Balance")]
 	pub enum Event<T: Config> {
+		/// \[From, To, Amount\]
 		Transfer(T::AccountId, T::AccountId, T::Balance),
+		/// \[From, To, Amount\]
 		Approval(T::AccountId, T::AccountId, T::Balance),
     }
 	
@@ -173,7 +185,7 @@ pub mod pallet {
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(2, 2))]
         pub fn transfer(origin: OriginFor<T>, to: T::AccountId, amount: T::Balance) -> DispatchResultWithPostInfo {
 			let from = ensure_signed(origin)?;
-			Self::_transfer(from, to.clone(), amount)?;
+			Self::_transfer(from, to, amount)?;
             Ok(().into())
         }
 
