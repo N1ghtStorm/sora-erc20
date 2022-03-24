@@ -40,20 +40,20 @@ pub mod pallet {
 		pub name: Vec<u8>,
 		pub sym: Vec<u8>,
 		pub decimals: Option<u8>,
-    }
+	}
 
 	#[cfg(feature = "std")]
-    impl<T: Config> GenesisConfig<T> {
-        pub fn build_storage(&self) -> Result<sp_runtime::Storage, String> {
-            <Self as GenesisBuild<T>>::build_storage(self)
-        }
+	impl<T: Config> GenesisConfig<T> {
+		pub fn build_storage(&self) -> Result<sp_runtime::Storage, String> {
+			<Self as GenesisBuild<T>>::build_storage(self)
+		}
 
-        pub fn assimilate_storage(&self, storage: &mut sp_runtime::Storage) -> Result<(), String> {
-            <Self as GenesisBuild<T>>::assimilate_storage(self, storage)
-        }
-    }
+		pub fn assimilate_storage(&self, storage: &mut sp_runtime::Storage) -> Result<(), String> {
+			<Self as GenesisBuild<T>>::assimilate_storage(self, storage)
+		}
+	}
 
-    #[cfg(feature = "std")]
+	#[cfg(feature = "std")]
 	impl<T: Config> Default for GenesisConfig<T> {
 		fn default() -> Self {
 			Self { 
@@ -68,7 +68,7 @@ pub mod pallet {
 	#[pallet::genesis_build]
 	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
 		fn build(&self) {
-            let total_supply = self.balances
+			let total_supply = self.balances
 							.iter()
 							.map(|(_, y)| *y)
 							.fold(T::Balance::default(),|x, y| {
@@ -88,7 +88,7 @@ pub mod pallet {
 		}
 	}
 
-    #[pallet::config]
+	#[pallet::config]
 	/// The module configuration trait.
 	pub trait Config: 
 		frame_system::Config +
@@ -98,12 +98,12 @@ pub mod pallet {
 					MaybeSerializeDeserialize + Debug;
 	}
 
-    #[pallet::hooks]
+	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
 
 
-    #[pallet::type_value]
-    pub fn DefaultDecimals() -> u8 { DEFAULT_DECIMALS }
+	#[pallet::type_value]
+	pub fn DefaultDecimals() -> u8 { DEFAULT_DECIMALS }
 
 	// pallet storages:
 	#[pallet::storage]
@@ -163,7 +163,7 @@ pub mod pallet {
 		InsufficientAllowance,
 		/// Burn amount exceeds balacnde error
 		BurnAmountExceedsBalance,
-    }
+	}
 
 	// Pallet events
 	#[pallet::event]
@@ -174,30 +174,30 @@ pub mod pallet {
 		Transfer(T::AccountId, T::AccountId, T::Balance),
 		/// \[From, To, Amount\]
 		Approval(T::AccountId, T::AccountId, T::Balance),
-    }
-	
+	}
+
 	#[deprecated(note = "use `Event` instead")]
 	pub type RawEvent<T> = Event<T>;
 
 	/// Calls:
-    #[pallet::call]
+	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(2, 2))]
-        pub fn transfer(origin: OriginFor<T>, to: T::AccountId, amount: T::Balance) -> DispatchResultWithPostInfo {
+		pub fn transfer(origin: OriginFor<T>, to: T::AccountId, amount: T::Balance) -> DispatchResultWithPostInfo {
 			let from = ensure_signed(origin)?;
 			Self::_transfer(from, to, amount)?;
-            Ok(().into())
-        }
+			Ok(().into())
+		}
 
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1, 1))]
-        pub fn approve(origin: OriginFor<T>, spender: T::AccountId, amount: T::Balance) -> DispatchResultWithPostInfo {
+		pub fn approve(origin: OriginFor<T>, spender: T::AccountId, amount: T::Balance) -> DispatchResultWithPostInfo {
 			let owner = ensure_signed(origin)?;
 			Self::_approve(owner, spender, amount)?;
-            Ok(().into())
-        }
+			Ok(().into())
+		}
 
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(3, 3))]
-        pub fn transfer_from(
+		pub fn transfer_from(
 			origin: OriginFor<T>, 
 			from: T::AccountId,
 			to: T::AccountId, 
@@ -206,22 +206,22 @@ pub mod pallet {
 			let spender = ensure_signed(origin)?;
 			Self::_spend_allowance(from.clone(), spender, amount)?;
 			Self::_transfer(from, to, amount)?;
-            Ok(().into())
-        }
+			Ok(().into())
+		}
 
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1, 1))]
-        pub fn increase_allowance(origin: OriginFor<T>, sender: T::AccountId, added_value: T::Balance) -> DispatchResultWithPostInfo {
+		pub fn increase_allowance(origin: OriginFor<T>, sender: T::AccountId, added_value: T::Balance) -> DispatchResultWithPostInfo {
 			let owner = ensure_signed(origin)?;
 			let amount = AllowanceOf::<T>::get(&owner, &sender)
 													.checked_add(&added_value)
 													.ok_or(Error::<T>::BalanceOverflow)?;
 
 			Self::_approve(owner, sender, amount)?;
-            Ok(().into())
-        }
+			Ok(().into())
+		}
 
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1, 1))]
-        pub fn decrease_allowance(origin: OriginFor<T>, sender: T::AccountId, substracted_value: T::Balance) -> DispatchResultWithPostInfo {
+		pub fn decrease_allowance(origin: OriginFor<T>, sender: T::AccountId, substracted_value: T::Balance) -> DispatchResultWithPostInfo {
 			let owner = ensure_signed(origin)?;
 			let current_allowance = AllowanceOf::<T>::get(&owner, &sender);
 			ensure!(current_allowance >= substracted_value, Error::<T>::DecreasedAllowanceBelowZero);
@@ -229,9 +229,9 @@ pub mod pallet {
 																.ok_or(Error::<T>::BalanceOverflow)?;
 
 			Self::_approve(owner, sender, amount)?;
-            Ok(().into())
-        }
-    }
+			Ok(().into())
+		}
+	}
 
 	impl<T: Config> Pallet<T> {
 		pub fn _transfer(from: T::AccountId, to: T::AccountId, amount: T::Balance) -> DispatchResultWithPostInfo {			
@@ -293,5 +293,5 @@ pub mod pallet {
 			Self::deposit_event(Event::Transfer(account, T::AccountId::default(), amount));
 			Ok(().into())
 		}
-    }
+	}
 }
