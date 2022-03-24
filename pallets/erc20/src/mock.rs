@@ -58,10 +58,9 @@ impl pallet_erc20::Config for Test {
     type Balance = Balance;
 }
 
-pub const BALANCES: [(AccountId, Balance); 4] = [(1, 500_000), (2, 300_00), (3, 1000), (4, 0)];
+pub const BALANCES: [(AccountId, Balance); 4] = [(1, 500_000), (2, 300_000), (3, 1000), (4, 0)];
 pub fn get_test_total_supply() -> Balance {
-    BALANCES.iter().map(|(_, y)| y)
-                   .fold(0, |x, y| x + y)
+    BALANCES.iter().map(|(_, y)| y).sum()
 }
 
 pub fn get_test_token_name() -> Vec<u8> { String::from("SoraTestToken").as_bytes().to_vec() } 

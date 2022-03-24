@@ -9,8 +9,7 @@ mod tests;
 
 pub use pallet::*;
 use frame_support::{
-    codec::{Decode, Encode, Codec},
-    sp_runtime::RuntimeDebug,
+    codec::{Codec},
 };
 use frame_support::sp_runtime::sp_std::{fmt::Debug};
 
@@ -154,6 +153,7 @@ pub mod pallet {
 		DecreasedAllowanceBelowZero,
 		BalanceOverflow,
 		InsufficientAllowance,
+		BurnAmountExceedsBalance,
     }
 
 	#[pallet::event]
@@ -170,7 +170,7 @@ pub mod pallet {
 	/// Calls:
     #[pallet::call]
 	impl<T: Config> Pallet<T> {
-		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1, 1))]
+		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(2, 2))]
         pub fn transfer(origin: OriginFor<T>, to: T::AccountId, amount: T::Balance) -> DispatchResultWithPostInfo {
 			let from = ensure_signed(origin)?;
 			Self::_transfer(from, to.clone(), amount)?;
@@ -184,7 +184,7 @@ pub mod pallet {
             Ok(().into())
         }
 
-		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1, 1))]
+		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(3, 3))]
         pub fn transfer_from(
 			origin: OriginFor<T>, 
 			from: T::AccountId,
@@ -252,6 +252,33 @@ pub mod pallet {
 									.ok_or( Error::<T>::InsufficientAllowance)?;
 				Self::_approve(owner, spender, new_allowance)?;
 			}
+			Ok(().into())
+		}
+
+		pub fn _mint(account: T::AccountId, amount: T::Balance) -> DispatchResultWithPostInfo {
+			BalanceOf::<T>::try_mutate(&account, |balance| -> DispatchResultWithPostInfo {
+				TotalSupply::<T>::try_mutate(|bal| -> DispatchResultWithPostInfo {
+					*bal = bal.checked_add(&amount).ok_or(Error::<T>::BalanceOverflow)?;
+					Ok(().into())
+				})?;
+				*balance = balance.checked_add(&amount).ok_or(Error::<T>::BalanceOverflow)?;
+				Ok(().into())
+			})?;
+			Self::deposit_event(Event::Transfer(T::AccountId::default(), account, amount));
+			Ok(().into())
+		}
+
+		pub fn _burn(account: T::AccountId, amount: T::Balance) -> DispatchResultWithPostInfo {
+			BalanceOf::<T>::try_mutate(&account, |balance| -> DispatchResultWithPostInfo {
+				ensure!(*balance >= amount, Error::<T>::BurnAmountExceedsBalance);
+				TotalSupply::<T>::try_mutate(|bal| -> DispatchResultWithPostInfo {
+					*bal = bal.checked_sub(&amount).ok_or(Error::<T>::BalanceOverflow)?;
+					Ok(().into())
+				})?;
+				*balance = balance.checked_sub(&amount).ok_or(Error::<T>::BalanceOverflow)?;
+				Ok(().into())
+			})?;
+			Self::deposit_event(Event::Transfer(account, T::AccountId::default(), amount));
 			Ok(().into())
 		}
     }

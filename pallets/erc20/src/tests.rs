@@ -1,4 +1,4 @@
-use crate::{Error, mock::*, TotalSupply, DEFAULT_DECIMALS, Pallet};
+use crate::{Error, mock::*, DEFAULT_DECIMALS};
 use frame_support::{assert_ok, assert_noop};
 
 type RuntimeError = Error<Test>;
@@ -152,5 +152,38 @@ fn it_fails_transfer_from() {
         assert_noop!(transfer_from_result, RuntimeError::InsufficientAllowance);
         assert_noop!(transfer_from_result_over_bal, RuntimeError::TransferAmountExceedsBalance);
         assert_eq!(alow_after_inc, allow_after_transfer);
+    });
+}
+
+
+#[test]
+fn it_works_mint_tokens() {
+    new_test_ext().execute_with(|| {
+        let sender_acc = BALANCES[3].0;
+        let mint_amount = 500;
+
+        let total_supply_before = PalletErc20::get_total_supply();
+        let mint_call = PalletErc20::_mint(sender_acc, mint_amount);
+
+        assert_ok!(mint_call, ().into());
+        assert_eq!(BALANCES[3].1 + mint_amount, PalletErc20::get_balance(sender_acc));
+        assert_eq!(total_supply_before + mint_amount, PalletErc20::get_total_supply());
+    });
+}
+
+#[test]
+fn it_works_burn_tokens() {
+    new_test_ext().execute_with(|| {
+        let sender_acc = BALANCES[2].0;
+        let burn_amount = 500;
+
+        let failed_burn_call = PalletErc20::_burn(sender_acc, BALANCES[2].1 + 1);
+        let total_supply_before = PalletErc20::get_total_supply();
+        let burn_call = PalletErc20::_burn(sender_acc, burn_amount);
+
+        assert_noop!(failed_burn_call, RuntimeError::BurnAmountExceedsBalance);
+        assert_ok!(burn_call, ().into());
+        assert_eq!(BALANCES[2].1 - burn_amount, PalletErc20::get_balance(sender_acc));
+        assert_eq!(total_supply_before - burn_amount, PalletErc20::get_total_supply());
     });
 }
