@@ -78,7 +78,7 @@ pub fn new_test_ext() -> frame_support::sp_io::TestExternalities {
         balances: BALANCES.iter().map(|(x, y)| (*x, *y)).collect(),
         name: get_test_token_name() ,
         sym: get_test_token_sym(),
-        decimals: None
+        decimals: 18
     }
     .assimilate_storage(&mut t)
     .unwrap();

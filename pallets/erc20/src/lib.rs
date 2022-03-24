@@ -9,26 +9,25 @@ mod tests;
 pub use pallet::*;
 use frame_support::{
     codec::{Codec},
+	sp_runtime::sp_std::{fmt::Debug},
 };
-use frame_support::sp_runtime::sp_std::{fmt::Debug};
 
 pub const DEFAULT_DECIMALS: u8 = 18;
 
 #[frame_support::pallet]
 pub mod pallet {
     use frame_support::{
-		dispatch::{DispatchResultWithPostInfo},
+		dispatch::{DispatchResultWithPostInfo, Vec},
 		pallet_prelude::*,
+		sp_runtime::{
+			traits::{
+				AtLeast32BitUnsigned, CheckedAdd, CheckedSub,
+				MaybeSerializeDeserialize, Bounded,
+			},
+		}
 	};
 	use frame_system::pallet_prelude::*;
-	use frame_support::dispatch::Vec;
 	use super::*;
-	use frame_support::sp_runtime::{
-		traits::{
-			AtLeast32BitUnsigned, CheckedAdd, CheckedSub,
-			MaybeSerializeDeserialize, Bounded,
-		},
-	};
 
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
@@ -39,7 +38,7 @@ pub mod pallet {
 		pub balances: Vec<(T::AccountId, T::Balance)>,
 		pub name: Vec<u8>,
 		pub sym: Vec<u8>,
-		pub decimals: Option<u8>,
+		pub decimals: u8,
 	}
 
 	#[cfg(feature = "std")]
@@ -60,7 +59,7 @@ pub mod pallet {
 				balances: Default::default(),
 				name: Vec::new(),
 				sym: Vec::new(),
-				decimals: None
+				decimals: 0
 			}
 		}
 	}
@@ -88,8 +87,8 @@ pub mod pallet {
 		}
 	}
 
-	#[pallet::config]
 	/// The module configuration trait.
+	#[pallet::config]
 	pub trait Config: 
 		frame_system::Config +
 	{
@@ -182,6 +181,17 @@ pub mod pallet {
 	/// Calls:
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
+		/// <pre>
+		/// Method: transfer(origin: OriginFor<T>, to: T::AccountId, amount: T::Balance)
+		/// 
+		/// Arguments: origin: OriginFor<T> - Transaction caller
+		///            to: T::AccountId - Account to send to
+		///            amount: T::Balance - amount of tokens
+		/// 
+		/// Access: Token holder
+		///
+		/// Sets amount as the allowance of spender over the caller’s tokens
+		/// </pre>
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(2, 2))]
 		pub fn transfer(origin: OriginFor<T>, to: T::AccountId, amount: T::Balance) -> DispatchResultWithPostInfo {
 			let from = ensure_signed(origin)?;
@@ -189,6 +199,17 @@ pub mod pallet {
 			Ok(().into())
 		}
 
+		/// <pre>
+		/// Method: approve(origin: OriginFor<T>, spender: T::AccountId, amount: T::Balance)
+		/// 
+		/// Arguments: origin: OriginFor<T> - Transaction caller
+		///            spender: T::AccountId - 
+		///            amount: T::Balance - amount of tokens
+		/// 
+		/// Access: Token holder
+		///
+		/// Sets amount as the allowance of spender over the caller’s tokens
+		/// </pre>
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1, 1))]
 		pub fn approve(origin: OriginFor<T>, spender: T::AccountId, amount: T::Balance) -> DispatchResultWithPostInfo {
 			let owner = ensure_signed(origin)?;
@@ -196,6 +217,22 @@ pub mod pallet {
 			Ok(().into())
 		}
 
+		/// <pre>
+		/// Method: transfer_from(origin: OriginFor<T>, 
+		///							from: T::AccountId,
+		///							to: T::AccountId, 
+		///							amount: T::Balance)
+		/// 
+		/// Arguments: origin: OriginFor<T> - Transaction caller
+		///            from: T::AccountId - Account to send to
+		///            to: T::Balance - amount of tokens
+		///            amount: T::Balance - amount of tokens
+		/// 
+		/// Access: Allowed to spend tokens account
+		///
+		/// Moves amount tokens from sender to recipient using the allowance mechanism.
+		/// amount is then deducted from the caller’s allowance.
+		/// </pre>
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(3, 3))]
 		pub fn transfer_from(
 			origin: OriginFor<T>, 
@@ -209,24 +246,46 @@ pub mod pallet {
 			Ok(().into())
 		}
 
+		/// <pre>
+		/// Method: increase_allowance(origin: OriginFor<T>, sender: T::AccountId, added_value: T::Balance)
+		/// 
+		/// Arguments: origin: OriginFor<T> - Transaction caller
+		///            sender: T::AccountId - Account to increase its allowance
+		///            added_value: T::Balance - amount of tokens
+		/// 
+		/// Access: Account that has tokens
+		///
+		/// increase allowance of account
+		/// </pre>
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1, 1))]
 		pub fn increase_allowance(origin: OriginFor<T>, sender: T::AccountId, added_value: T::Balance) -> DispatchResultWithPostInfo {
 			let owner = ensure_signed(origin)?;
 			let amount = AllowanceOf::<T>::get(&owner, &sender)
-													.checked_add(&added_value)
-													.ok_or(Error::<T>::BalanceOverflow)?;
+						.checked_add(&added_value)
+						.ok_or(Error::<T>::BalanceOverflow)?;
 
 			Self::_approve(owner, sender, amount)?;
 			Ok(().into())
 		}
 
+		/// <pre>
+		/// Method: decrease_allowance(origin: OriginFor<T>, sender: T::AccountId, substracted_value: T::Balance)
+		/// 
+		/// Arguments: origin: OriginFor<T> - Transaction caller
+		///            sender: T::AccountId - Account to send to
+		///            substracted_value: T::Balance - amount of tokens
+		/// 
+		/// Access: Account that has tokens
+		///
+		/// Decreases allowance of account
+		/// </pre>
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1, 1))]
 		pub fn decrease_allowance(origin: OriginFor<T>, sender: T::AccountId, substracted_value: T::Balance) -> DispatchResultWithPostInfo {
 			let owner = ensure_signed(origin)?;
 			let current_allowance = AllowanceOf::<T>::get(&owner, &sender);
 			ensure!(current_allowance >= substracted_value, Error::<T>::DecreasedAllowanceBelowZero);
 			let amount = current_allowance.checked_sub(&substracted_value)
-																.ok_or(Error::<T>::BalanceOverflow)?;
+						.ok_or(Error::<T>::BalanceOverflow)?;
 
 			Self::_approve(owner, sender, amount)?;
 			Ok(().into())
@@ -234,6 +293,7 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
+		/// Transfers tokens from account to another account
 		pub fn _transfer(from: T::AccountId, to: T::AccountId, amount: T::Balance) -> DispatchResultWithPostInfo {			
 			BalanceOf::<T>::try_mutate(&from, |from_bal| -> DispatchResultWithPostInfo {
 				ensure!(*from_bal >= amount, Error::<T>::TransferAmountExceedsBalance);
@@ -248,6 +308,7 @@ pub mod pallet {
 			Ok(().into())
 		}
 
+		/// Sets `amount` as the allowance of `spender` over the `owner` s tokens.
 		pub fn _approve(owner: T::AccountId, spender: T::AccountId, amount: T::Balance) -> DispatchResultWithPostInfo {
 			AllowanceOf::<T>::try_mutate(&owner, &spender, |bal| -> DispatchResultWithPostInfo {
 				*bal = amount;
@@ -257,6 +318,7 @@ pub mod pallet {
 			Ok(().into())
 		}
 
+		/// Updates `owner` s allowance for `spender` based on spent `amount`
 		pub fn _spend_allowance(owner: T::AccountId, spender: T::AccountId, amount: T::Balance) -> DispatchResultWithPostInfo {
 			let current_allowance = AllowanceOf::<T>::get(&owner, &spender);
 			if current_allowance != T::Balance::max_value() {
@@ -267,6 +329,7 @@ pub mod pallet {
 			Ok(().into())
 		}
 
+		/// Creates `amount` tokens and assigns them to `account`, increasing the total supply
 		pub fn _mint(account: T::AccountId, amount: T::Balance) -> DispatchResultWithPostInfo {
 			BalanceOf::<T>::try_mutate(&account, |balance| -> DispatchResultWithPostInfo {
 				TotalSupply::<T>::try_mutate(|bal| -> DispatchResultWithPostInfo {
@@ -280,6 +343,7 @@ pub mod pallet {
 			Ok(().into())
 		}
 
+		/// Destroys `amount` tokens from `account`, reducing the total supply
 		pub fn _burn(account: T::AccountId, amount: T::Balance) -> DispatchResultWithPostInfo {
 			BalanceOf::<T>::try_mutate(&account, |balance| -> DispatchResultWithPostInfo {
 				ensure!(*balance >= amount, Error::<T>::BurnAmountExceedsBalance);

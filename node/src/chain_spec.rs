@@ -157,7 +157,7 @@ fn testnet_genesis(
 			balances: endowed_accounts.into_iter().map(|k|(k, 1 << 60)).collect(),
 			name: vec![83, 111, 114, 97, 84, 101, 115, 116, 84, 111, 107, 101, 110],
 			sym: vec![83, 84, 84],
-			decimals: Some(18),
+			decimals: 18,
 		}),
 	}
 }
