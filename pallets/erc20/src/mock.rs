@@ -3,7 +3,6 @@ use frame_support::parameter_types;
 use sp_runtime::{
 	traits::{BlakeTwo256, IdentityLookup}, testing::Header,
 };
-use frame_system as system;
 use crate as pallet_erc20;
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
@@ -59,26 +58,26 @@ impl pallet_erc20::Config for Test {
     type Balance = Balance;
 }
 
-// Build genesis storage according to the mock runtime.
-// pub fn new_test_ext() -> sp_io::TestExternalities {
-// 	system::GenesisConfig::default().build_storage::<Test>().unwrap().into()
-// }
-
 pub const BALANCES: [(AccountId, Balance); 4] = [(1, 500_000), (2, 300_00), (3, 1000), (4, 0)];
-
 pub fn get_test_total_supply() -> Balance {
-    BALANCES.iter().map(|(_, y)| y).fold(0, |x, y| x + y)
+    BALANCES.iter().map(|(_, y)| y)
+                   .fold(0, |x, y| x + y)
 }
 
-// Build genesis storage for event testing
-pub fn new_test_ext_with_event() -> frame_support::sp_io::TestExternalities {
+pub fn get_test_token_name() -> Vec<u8> { String::from("SoraTestToken").as_bytes().to_vec() } 
+pub fn get_test_token_sym() -> Vec<u8> { String::from("STT").as_bytes().to_vec() } 
+
+/// Build genesis storage
+pub fn new_test_ext() -> frame_support::sp_io::TestExternalities {
     let mut t = frame_system::GenesisConfig::default()
         .build_storage::<Test>()
         .unwrap();
 
     pallet_erc20::GenesisConfig::<Test> {
-        // Provide some initial balances
         balances: BALANCES.iter().map(|(x, y)| (*x, *y)).collect(),
+        name: get_test_token_name() ,
+        sym: get_test_token_sym(),
+        decimals: None
     }
     .assimilate_storage(&mut t)
     .unwrap();

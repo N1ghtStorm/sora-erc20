@@ -14,6 +14,8 @@ use frame_support::{
 };
 use frame_support::sp_runtime::sp_std::{fmt::Debug};
 
+pub const DEFAULT_DECIMALS: u8 = 18;
+
 #[frame_support::pallet]
 pub mod pallet {
     use frame_support::{
@@ -37,7 +39,10 @@ pub mod pallet {
 
 	#[pallet::genesis_config]
 	pub struct GenesisConfig<T: Config> {
-		pub balances: Vec<(T::AccountId, T::Balance)>
+		pub balances: Vec<(T::AccountId, T::Balance)>,
+		pub name: Vec<u8>,
+		pub sym: Vec<u8>,
+		pub decimals: Option<u8>,
     }
 
 	#[cfg(feature = "std")]
@@ -55,7 +60,10 @@ pub mod pallet {
 	impl<T: Config> Default for GenesisConfig<T> {
 		fn default() -> Self {
 			Self { 
-				balances: Default::default() 
+				balances: Default::default(),
+				name: Vec::new(),
+				sym: Vec::new(),
+				decimals: None
 			}
 		}
 	}
@@ -72,6 +80,11 @@ pub mod pallet {
 
 			TotalSupply::<T>::mutate(|x| *x = total_supply);
 
+			// We can afford Vec<u8>.clone() in genesis build, because it called once and name is not long
+			// Doing without O(n) allocation - is std mem swapping to Vec::new() - to move name and sym from genesis config
+			Name::<T>::mutate(|x| *x = self.name.clone());
+			Symbol::<T>::mutate(|x| *x = self.sym.clone());
+
 			for (acc, bal) in &self.balances {
 				BalanceOf::<T>::insert(acc, bal);
 			}
@@ -86,12 +99,14 @@ pub mod pallet {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		type Balance: Parameter + Member + AtLeast32BitUnsigned + Codec + Default + Copy +
 					MaybeSerializeDeserialize + Debug;
-		// type Balance: Debug + Default + Copy;
-		// type Balance: Parameter + AtLeast32BitUnsigned + Codec + Default + Copy + Debug;
 	}
 
     #[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
+
+
+    #[pallet::type_value]
+    pub fn DefaultDecimals() -> u8 { DEFAULT_DECIMALS }
 
 	// pallet storages:
 	#[pallet::storage]
@@ -101,15 +116,15 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn get_name)]
-	pub type Name<T: Config> = StorageValue<_, Vec<u8>>;
+	pub type Name<T: Config> = StorageValue<_, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn get_symbol)]
-	pub type Symbol<T: Config> = StorageValue<_, Vec<u8>>;
+	pub type Symbol<T: Config> = StorageValue<_, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn get_decimals)]
-	pub type Decimals<T: Config> = StorageValue<_, u8>;
+	pub type Decimals<T: Config> = StorageValue<_, u8, ValueQuery, DefaultDecimals>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn get_balance)]
