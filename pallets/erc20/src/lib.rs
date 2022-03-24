@@ -173,7 +173,7 @@ pub mod pallet {
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1, 1))]
         pub fn transfer(origin: OriginFor<T>, to: T::AccountId, amount: T::Balance) -> DispatchResultWithPostInfo {
 			let from = ensure_signed(origin)?;
-			Self::transfer_impl(from, to, amount)?;
+			Self::transfer_impl(from, to.clone(), amount)?;
             Ok(().into())
         }
 
@@ -226,8 +226,8 @@ pub mod pallet {
 			BalanceOf::<T>::try_mutate(&from, |from_bal| -> DispatchResultWithPostInfo {
 				ensure!(*from_bal >= amount, Error::<T>::TransferAmountExceedsBalance);
 				BalanceOf::<T>::try_mutate(&to, |to_bal| -> DispatchResultWithPostInfo {
-					from_bal.checked_sub(&amount);
-					to_bal.checked_add(&amount);
+					*from_bal = from_bal.checked_sub(&amount).ok_or(Error::<T>::BalanceOverflow)?;
+					*to_bal = to_bal.checked_add(&amount).ok_or(Error::<T>::BalanceOverflow)?;
 					Ok(().into())
 				})?;
 				Ok(().into())
