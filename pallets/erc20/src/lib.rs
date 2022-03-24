@@ -173,14 +173,14 @@ pub mod pallet {
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1, 1))]
         pub fn transfer(origin: OriginFor<T>, to: T::AccountId, amount: T::Balance) -> DispatchResultWithPostInfo {
 			let from = ensure_signed(origin)?;
-			Self::transfer_impl(from, to.clone(), amount)?;
+			Self::_transfer(from, to.clone(), amount)?;
             Ok(().into())
         }
 
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1, 1))]
         pub fn approve(origin: OriginFor<T>, spender: T::AccountId, amount: T::Balance) -> DispatchResultWithPostInfo {
 			let owner = ensure_signed(origin)?;
-			Self::approve_impl(owner, spender, amount)?;
+			Self::_approve(owner, spender, amount)?;
             Ok(().into())
         }
 
@@ -192,8 +192,8 @@ pub mod pallet {
 			amount: T::Balance
 		) -> DispatchResultWithPostInfo {
 			let spender = ensure_signed(origin)?;
-			Self::spend_allowance_impl(from.clone(), spender, amount)?;
-			Self::transfer_impl(from, to, amount)?;
+			Self::_spend_allowance(from.clone(), spender, amount)?;
+			Self::_transfer(from, to, amount)?;
             Ok(().into())
         }
 
@@ -204,7 +204,7 @@ pub mod pallet {
 													.checked_add(&added_value)
 													.ok_or(Error::<T>::BalanceOverflow)?;
 
-			Self::approve_impl(owner, sender, amount)?;
+			Self::_approve(owner, sender, amount)?;
             Ok(().into())
         }
 
@@ -216,13 +216,13 @@ pub mod pallet {
 			let amount = current_allowance.checked_sub(&substracted_value)
 																.ok_or(Error::<T>::BalanceOverflow)?;
 
-			Self::approve_impl(owner, sender, amount)?;
+			Self::_approve(owner, sender, amount)?;
             Ok(().into())
         }
     }
 
 	impl<T: Config> Pallet<T> {
-		pub fn transfer_impl(from: T::AccountId, to: T::AccountId, amount: T::Balance) -> DispatchResultWithPostInfo {			
+		pub fn _transfer(from: T::AccountId, to: T::AccountId, amount: T::Balance) -> DispatchResultWithPostInfo {			
 			BalanceOf::<T>::try_mutate(&from, |from_bal| -> DispatchResultWithPostInfo {
 				ensure!(*from_bal >= amount, Error::<T>::TransferAmountExceedsBalance);
 				BalanceOf::<T>::try_mutate(&to, |to_bal| -> DispatchResultWithPostInfo {
@@ -236,7 +236,7 @@ pub mod pallet {
 			Ok(().into())
 		}
 
-		pub fn approve_impl(owner: T::AccountId, spender: T::AccountId, amount: T::Balance) -> DispatchResultWithPostInfo {
+		pub fn _approve(owner: T::AccountId, spender: T::AccountId, amount: T::Balance) -> DispatchResultWithPostInfo {
 			AllowanceOf::<T>::try_mutate(&owner, &spender, |bal| -> DispatchResultWithPostInfo {
 				*bal = amount;
 				Ok(().into())
@@ -245,12 +245,12 @@ pub mod pallet {
 			Ok(().into())
 		}
 
-		pub fn spend_allowance_impl(owner: T::AccountId, spender: T::AccountId, amount: T::Balance) -> DispatchResultWithPostInfo {
+		pub fn _spend_allowance(owner: T::AccountId, spender: T::AccountId, amount: T::Balance) -> DispatchResultWithPostInfo {
 			let current_allowance = AllowanceOf::<T>::get(&owner, &spender);
 			if current_allowance != T::Balance::max_value() {
 				let new_allowance = current_allowance.checked_sub(&amount)
 									.ok_or( Error::<T>::InsufficientAllowance)?;
-				Self::approve_impl(owner, spender, new_allowance)?;
+				Self::_approve(owner, spender, new_allowance)?;
 			}
 			Ok(().into())
 		}

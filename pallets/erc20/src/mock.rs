@@ -86,3 +86,12 @@ pub fn new_test_ext() -> frame_support::sp_io::TestExternalities {
 	ext.execute_with(|| System::set_block_number(1));
 	ext
 }
+
+// get and cut last event
+#[allow(clippy::result_unit_err)] 
+pub fn last_event() -> Result<Event, ()> {
+	match System::events().pop() {
+		Some(ev) => Ok(ev.event),
+		None => Err(())
+	}
+}
