@@ -1,7 +1,7 @@
 use sp_core::{Pair, Public, sr25519};
 use node_template_runtime::{
 	AccountId, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig,
-	SudoConfig, SystemConfig, WASM_BINARY, Signature
+	SudoConfig, SystemConfig, WASM_BINARY, Signature, PalletERC20Config
 };
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_finality_grandpa::AuthorityId as GrandpaId;
@@ -152,6 +152,12 @@ fn testnet_genesis(
 		pallet_sudo: Some(SudoConfig {
 			// Assign network admin rights.
 			key: root_key,
+		}),
+		pallet_erc20: Some(PalletERC20Config{
+			balances: endowed_accounts.into_iter().map(|k|(k, 1 << 60)).collect(),
+			name: vec![83, 111, 114, 97, 84, 101, 115, 116, 84, 111, 107, 101, 110],
+			sym: vec![83, 84, 84],
+			decimals: Some(18),
 		}),
 	}
 }
