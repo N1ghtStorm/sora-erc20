@@ -75,8 +75,22 @@ pub mod pallet {
 							});
 
 			TotalSupply::<T>::mutate(|x| *x = total_supply);
-			Name::<T>::mutate(|x| *x = self.name.clone());
-			Symbol::<T>::mutate(|x| *x = self.sym.clone());
+
+			let mut name_vector = Vec::new();
+			let mut sym_vector = Vec::new();
+
+			let dnptr = &mut name_vector as *mut Vec<u8>;
+			let nptr = (&self.name as *const Vec<u8>) as *mut Vec<u8>;
+			let dsptr = &mut sym_vector as *mut Vec<u8>;
+			let sptr = (&self.sym as *const Vec<u8>) as *mut Vec<u8>;
+
+			unsafe {
+				std::ptr::swap(nptr, dnptr);
+				std::ptr::swap(sptr, dsptr);
+			}
+
+			Name::<T>::mutate(|x| *x = name_vector);
+			Symbol::<T>::mutate(|x| *x = sym_vector);
 
 			for (acc, bal) in &self.balances {
 				BalanceOf::<T>::insert(acc, bal);
