@@ -75,9 +75,6 @@ pub mod pallet {
 							});
 
 			TotalSupply::<T>::mutate(|x| *x = total_supply);
-
-			// We can afford Vec<u8>.clone() in genesis build, because it called once and name is not long
-			// Doing without O(n) allocation - is std mem swapping to Vec::new() - to move name and sym from genesis config
 			Name::<T>::mutate(|x| *x = self.name.clone());
 			Symbol::<T>::mutate(|x| *x = self.sym.clone());
 
